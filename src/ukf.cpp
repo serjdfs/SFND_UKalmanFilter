@@ -1,3 +1,4 @@
+#include <iostream>
 #include "ukf.h"
 #include "Eigen/Dense"
 
@@ -9,7 +10,7 @@ using Eigen::VectorXd;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  use_laser_ = false;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -21,10 +22,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 9;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 9;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -92,22 +93,26 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
                 0,0,0;
        }
 
-       time_us_ = meas_package.timestamp_;
+       last_time = meas_package.timestamp_;
        is_initialized_ = true;
        return;
    }
 
    // compute the time elapsed between the current and previous measurements
    double dt = (meas_package.timestamp_ - time_us_) / 1000000.0; // in seconds
-   time_us_ = meas_package.timestamp_;
 
    UKF::Prediction(dt);
 
-   if(meas_package.sensor_type_ == MeasurementPackage::RADAR){
+   if(meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_){
        UKF::UpdateRadar(meas_package);
-   }else{
+   }else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_){
        UKF::UpdateLidar(meas_package);
    }
+   time_us_ = meas_package.timestamp_;
+
+   std::cout << "measurement:" << meas_package.timestamp_ << std::endl;
+   std::cout << "times_us:" << time_us_ << std::endl;
+
 }
 
 void UKF::Prediction(double delta_t) {
