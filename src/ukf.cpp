@@ -67,8 +67,6 @@ UKF::UKF() {
    for (int i=1; i<2*n_aug_+1; ++i) {
        weights_(i) = weight;
    }
-   x_.setZero();
-   P_.setIdentity();
 }
 
 UKF::~UKF() {}
@@ -80,12 +78,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    */
 
    if(!is_initialized_){
+       x_.setZero();
+       P_.setIdentity();
        if(meas_package.sensor_type_ == MeasurementPackage::RADAR){
            double rho = meas_package.raw_measurements_[0];
-           double yaw = meas_package.raw_measurements_[1];
-           double rho_d = meas_package.raw_measurements_[1];
+           double phi = meas_package.raw_measurements_[1];
+           double rho_d = meas_package.raw_measurements_[2];
 
-           x_ << rho*cos(yaw), rho*sin(yaw), rho_d, yaw, 0; // FIXME: correct velocity, yaw also?
+           x_ << rho*cos(phi), rho*sin(phi), rho_d, phi, 0; // FIXME: correct velocity, phi also?
        }else{   // set the state with the initial location and zero velocity
            x_ << meas_package.raw_measurements_[0],
                 meas_package.raw_measurements_[1],
@@ -98,8 +98,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    }
 
    // compute the time elapsed between the current and previous measurements
-   // dt - expressed in seconds
-   float dt = (meas_package.timestamp_ - time_us_) / 1000000.0;
+   double dt = (meas_package.timestamp_ - time_us_) / 1000000.0; // in seconds
    time_us_ = meas_package.timestamp_;
 
    UKF::Prediction(dt);
@@ -188,8 +187,7 @@ void UKF::Prediction(double delta_t) {
        Xsig_pred_(4,i) = yawd_p;
    }
 
-   // --------   Predicted Mean and Covariance  ----------
-
+   // --------------   Predict Mean and Covariance  ----------------
    // predicted state mean
    x_.fill(0.0);
    for (int i = 0; i < 2 * n_aug_ + 1; ++i) {  // iterate over sigma points
@@ -207,8 +205,6 @@ void UKF::Prediction(double delta_t) {
 
        P_ = P_ + weights_(i) * x_diff * x_diff.transpose() ;
    }
-
-
 }
 
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
@@ -292,9 +288,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     // Kalman gain K;
     MatrixXd K = Tc * S.inverse();
 
-    // vector for incoming radar measurement: [rho phi rho_dot] in SI units and rad
-    Eigen::VectorXd z = VectorXd(3);
-    z << meas_package.raw_measurements_[0],meas_package.raw_measurements_[1],meas_package.raw_measurements_[2];
+    // vector for incoming lidar measurement: [p_x p_y] in SI units and rad
+    Eigen::VectorXd z = VectorXd(n_z);
+    z << meas_package.raw_measurements_[0],meas_package.raw_measurements_[1];
 
     // residual
     VectorXd z_diff = z - z_pred;
@@ -316,7 +312,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    * You can also calculate the radar NIS, if desired.
    */
 
-  // set measurement dimension, radar can measure r, phi, and r_dot
+    // ---------------- Measurement Prediction ----------------------
+    // set measurement dimension, radar can measure r, phi, and r_dot
     int n_z = 3;
 
     // create matrix for sigma points in measurement space
@@ -371,6 +368,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             0, 0,std_radrd_*std_radrd_;
     S = S + R;
 
+    // ---------------- Measurement Update ----------------------
     // create matrix for cross correlation Tc
     MatrixXd Tc = MatrixXd(n_x_, n_z);
 
