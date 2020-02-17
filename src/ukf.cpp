@@ -22,10 +22,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 7;
+  std_a_ = 4;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 7;
+  std_yawdd_ = 4;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -86,7 +86,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
            double phi = meas_package.raw_measurements_[1];
            double rho_d = meas_package.raw_measurements_[2];
 
-           x_ << rho*cos(phi), rho*sin(phi), rho_d, phi, 0; // FIXME: correct velocity, phi also?
+           x_ << rho*cos(phi), rho*sin(phi), rho_d, phi, 0;
        }else{   // set the state with the initial location and zero velocity
            x_ << meas_package.raw_measurements_[0],
                 meas_package.raw_measurements_[1],
