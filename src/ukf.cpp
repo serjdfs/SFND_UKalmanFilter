@@ -10,7 +10,7 @@ using Eigen::VectorXd;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = false;
+  use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -22,10 +22,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 9;
+  std_a_ = 7;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 9;
+  std_yawdd_ = 7;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -93,7 +93,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
                 0,0,0;
        }
 
-       last_time = meas_package.timestamp_;
        is_initialized_ = true;
        return;
    }
@@ -110,8 +109,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    }
    time_us_ = meas_package.timestamp_;
 
-   std::cout << "measurement:" << meas_package.timestamp_ << std::endl;
-   std::cout << "times_us:" << time_us_ << std::endl;
+   //std::cout << "measurement:" << meas_package.timestamp_ << std::endl;
+   //std::cout << "times_us:" << time_us_ << std::endl;
 
 }
 
@@ -264,9 +263,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
     // add measurement noise covariance matrix
     MatrixXd R = MatrixXd(n_z,n_z);
-    R <<  std_radr_*std_radr_, 0, 0,
-            0, std_radphi_*std_radphi_, 0,
-            0, 0,std_radrd_*std_radrd_;
+    R <<  std_laspx_*std_laspx_, 0,
+            0, std_laspy_*std_laspy_;
     S = S + R;
 
     // create matrix for cross correlation Tc
